@@ -28,99 +28,7 @@ print_help() {
 	echo "\t-s [WIDTH]	vypisuje date ne číselně, ale graficky v podobě histogramů"
 }
 
-COMMAND=""
-AFTER="0000-00-00"
-BEFORE="9999-99-99"
-GENDER=""
-WIDTH="0"
-LOG=""
-GZ_LOG=""
-BZ_LOG=""
-
-while [ "$#" -gt 0 ]; do
-	case "$1" in
-	-h | --help)
-		print_help
-		shift
-		;;
-	-a)
-		AFTER="$2"
-		shift
-		shift
-		;;
-	-b)
-		BEFORE="$2"
-		shift
-		shift
-		;;
-	-g)
-		if [ "$2" != "M" ] || [ "$2" != "Z" ]; then
-			echo "Invalid gender filter. Please use corona -h for help."
-			exit 1
-		fi
-		GENDER="$2"
-		shift
-		shift
-		;;
-	-s)
-		OPTARG="$2"
-		if [[ $OPTARG =~ ^[0-9]+$ ]]; then
-   			WIDTH="$2"
-			shift
-			shift
-		else
-			WIDTH="1"
-			shift
-		fi
-		;;
-	-*)
-		echo "Invalid filter. Please use corona -h for help."	
-		exit 1
-		;;
-	infected | merge | gender | age | daily | monthly | yearly | countries | districts | regions)
-		COMMAND="$1"
-		shift
-		;;
-	*.csv)
-		LOG="$1 $LOG"
-		shift
-		;;	
-	*.gz)
-		GZ_LOG="$1 $GZ_LOG"
-		shift
-		;;
-	*.bz2)
-		BZ_LOG="$1 $BZ_LOG"
-		shift
-		;;
-	*)
-		echo "Invalid command. Please use corona -h for help."
-		exit 1
-		;;	
-	esac
-done
-
-if [ "$LOG" = "" ] && [ "$GZ_LOG" = "" ] && [ "$BZ_LOG" = "" ]; then
-	READ="$(cat)"
-elif [ "$LOG" != "" ] && [ "$GZ_LOG" = "" ] && [ "$BZ_LOG" = "" ]; then
-	READ="$(cat $LOG)"
-elif [ "$GZ_LOG" != "" ] && [ "$BZ_LOG" = "" ]; then
-	READ="$(gzip -d -c $GZ_LOG | cat $LOG)"
-elif [ "$BZ_LOG" != "" ]; then
-	READ="$(bzip2 -d -c $BZ_LOG | gzip -d -c $GZ_LOG | cat $LOG)"
-fi
-
-if [ "$COMMAND" = "" ]; then
-	echo "$READ"
-	exit 0
-elif [ "$COMMAND" = "infected" ]; then
-	echo "$READ" | awk 'END {print NR-1}'
-	exit 0
-elif [ "$COMMAND" = "merge" ]; then
-	echo "id,datum,vek,pohlavi,kraj_nuts_kod,okres_lau_kod,nakaza_v_zahranici,nakaza_zeme_csu_kod,reportovano_khs"
-	echo "$READ" | sed 1d
-	exit 0
-elif [ "$COMMAND" = "gender" ]; then
+gender() {
 	if [ "$WIDTH" = "0" ]; then
 		echo "$READ" | awk -F ',' -v gender=0 '/,M,/ {gender++} END {print "M: " gender}'
 		echo "$READ" | awk -F ',' -v gender=0 '/,Z,/ {gender++} END {print "Z: " gender}'
@@ -144,8 +52,9 @@ elif [ "$COMMAND" = "gender" ]; then
 				for (i=1; i <= width; i++){printf("#")}
 				print("")}}'
 	fi
-	exit 0
-elif [ "$COMMAND" = "age" ]; then
+}
+
+age() {
 	if [ "$WIDTH" = "0" ]; then
 		echo "$READ" | sed 1d | awk -F ',' '{ if ($3 == "") none++
 		else if ($3 <= 5) c5++
@@ -217,8 +126,9 @@ elif [ "$COMMAND" = "age" ]; then
 		END {printf ">105	: "} END {for (i=1; i < cmore/width; i++) printf("#") } END {print("")}\
 		END {printf "None	: "} END {for (i=1; i < none/width; i++) printf("#") } END {print("")}'
 	fi
-	exit 0
-elif [ "$COMMAND" = "daily" ]; then
+}
+
+daily() {
 	if [ "$WIDTH" = "0" ]; then
 		echo "$READ" | sed 1d | awk -F ',' '{day[$2]++} END {for (i in day) print(i ": " day[i])}' | sort
 	elif [ "$WIDTH" = "1" ]; then
@@ -227,11 +137,230 @@ elif [ "$COMMAND" = "daily" ]; then
 					printf(i ": ")
 					for (j=1; j < int(day[i]/width); j++){printf("#")}
 					print("")}}' | sort
-	else #TODO: repair width filter with number
-		echo "$READ" | sed 1d | awk -F ',' -v width=500 '{max=0; day[$2]++; if (day[$2] > max){max = day[$2]}}\
-		END { max=0; for (i in day){
-						printf(i ": ")
-						for (j=1; j < int(width*day[i]/max); j++){printf("#")}
-						print("")}}' | sort
+	else
+		echo "$READ" | sed 1d | awk -F ',' -v width="$WIDTH" '{max=0; day[$2]++; if (day[$2] > max){max = day[$2]}}\
+		END {	for (i in day){
+					printf(i ": ")
+					for (j=1; j < int(width*day[i]/max); j++){printf("#")}
+					print("")}}' | sort
 	fi
+}
+
+monthly() {
+	if [ "$WIDTH" = "0" ]; then
+		echo "$READ" | sed 1d | awk -F ',' '{mon[substr($2, 1, 7)]++} END {for (i in mon) print(i ": " mon[i])}' | sort
+	elif [ "$WIDTH" = "1" ]; then
+		echo "$READ" | sed 1d | awk -F ',' -v width=10000 '{mon[substr($2, 1, 7)]++}
+		END {	for (i in mon){
+					printf(i ": ")
+					for (j=1; j < int(mon[i]/width); j++){printf("#")}
+					print("")}}' | sort
+	else
+		echo "$READ" | sed 1d | awk -F ',' -v width="$WIDTH" '{max=0; mon[substr($2, 1, 7)]++; if (mon[substr($2, 1, 7)] > max){max = mon[substr($2, 1, 7)]}}\
+		END {	for (i in mon){
+					printf(i ": ")
+					for (j=1; j < int(width*mon[i]/max)-1; j++){printf("#")}
+					print("")}}' | sort
+	fi
+}
+
+yearly() {
+	if [ "$WIDTH" = "0" ]; then
+		echo "$READ" | sed 1d | awk -F ',' '{yr[substr($2, 1, 4)]++} END {for (i in yr) print(i ": " yr[i])}' | sort
+	elif [ "$WIDTH" = "1" ]; then
+		echo "$READ" | sed 1d | awk -F ',' -v width=100000 '{yr[substr($2, 1, 4)]++}
+		END {	for (i in yr){
+					printf(i ": ")
+					for (j=1; j < int(yr[i]/width); j++){printf("#")}
+					print("")}}' | sort
+	else #NOT SURE IF THIS WORKS
+		echo "$READ" | sed 1d | awk -F ',' -v width="$WIDTH" '{max=0; yr[substr($2, 1, 4)]++; if (yr[substr($2, 1, 4)] > max){max = yr[substr($2, 1, 4)]}}\
+		END {	for (i in yr){
+					printf(i ": ")
+					for (j=1; j < int(width*yr[i]/max)-1; j++){printf("#")}
+					print("")}}' | sort
+	fi
+}
+
+countries() {
+	if [ "$WIDTH" = "0" ]; then
+		echo "$READ" | sed 1d | awk -F ',' '{country[$8]++} END {for (i in country){if (i == ""){continue}; print(i ": " country[i])}}' | sort
+	elif [ "$WIDTH" = "1" ]; then
+		echo "$READ" | sed 1d | awk -F ',' -v width=100 '{country[$8]++}
+		END {	for (i in country){
+					if (i == ""){continue}
+					printf(i ": ")
+					for (j=1; j < int(country[i]/width); j++){printf("#")}
+					print("")}}' | sort
+	else #TODO: fix
+		echo "$READ" | sed 1d | awk -F ',' -v width="$WIDTH" '{max=0; country[$8]++; if (country[$8] != "" && country[$8] > max){max = country[$8]}}\
+		END {	for (i in country){
+					printf(i ": ")
+					for (j=1; j < int(width*country[i]/max); j++){printf("#")}
+					print("")}}' | sort
+	fi
+}
+
+districts() {
+	if [ "$WIDTH" = "0" ]; then
+		echo "$READ" | sed 1d | awk -F ',' '{district[$6]++} END {for (i in district){if (i == ""){continue}; print(i ": " district[i])}}' | sort
+	elif [ "$WIDTH" = "1" ]; then
+		echo "$READ" | sed 1d | awk -F ',' -v width=1000 '{district[$6]++}
+		END {	for (i in district){
+					if (i == ""){continue}
+					printf(i ": ")
+					for (j=1; j < int(district[i]/width); j++){printf("#")}
+					print("")}}' | sort
+	else #TODO: fix
+		echo "$READ" | sed 1d | awk -F ',' -v width="$WIDTH" '{max=0; district[$6]++; if (district[$6] != "" && district[$6] > max){max = district[$6]}}\
+		END {	for (i in district){
+					printf(i ": ")
+					for (j=1; j < int(width*district[i]/max); j++){printf("#")}
+					print("")}}' | sort
+	fi
+}
+
+regions() {
+	if [ "$WIDTH" = "0" ]; then
+		echo "$READ" | sed 1d | awk -F ',' '{region[$5]++} END {for (i in region){if (i == ""){continue}; print(i ": " region[i])}}' | sort
+	elif [ "$WIDTH" = "1" ]; then
+		echo "$READ" | sed 1d | awk -F ',' -v width=10000 '{region[$5]++}
+		END {	for (i in region){
+					if (i == ""){continue}
+					printf(i ": ")
+					for (j=1; j < int(region[i]/width); j++){printf("#")}
+					print("")}}' | sort
+	else #TODO: fix
+		echo "$READ" | sed 1d | awk -F ',' -v width="$WIDTH" '{max=0; region[$5]++; if (region[$5] != "" && region[$5] > max){max = region[$5]}}\
+		END {	for (i in region){
+					printf(i ": ")
+					for (j=1; j < int(width*region[i]/max); j++){printf("#")}
+					print("")}}' | sort
+	fi
+}
+
+COMMAND=""
+AFTER="0000-00-00"
+BEFORE="9999-99-99"
+GENDER=""
+WIDTH="0"
+LOG=""
+GZ_LOG=""
+BZ_LOG=""
+
+while [ "$#" -gt 0 ]; do
+	case "$1" in
+	-h | --help)
+		print_help
+		shift
+		;;
+	-a)
+		#TODO
+		AFTER="$2"
+		shift
+		shift
+		;;
+	-b)
+		#TODO
+		BEFORE="$2"
+		shift
+		shift
+		;;
+	-g)
+		if [ "$2" = "M" ] || [ "$2" = "Z" ]; then
+			GENDER="$2"
+			shift
+			shift
+		else
+			echo "Invalid gender filter. Please use corona -h for help."
+			exit 1
+		fi
+		;;
+	-s)
+		OPTARG="$2"
+		if [[ $OPTARG =~ ^[0-9]+$ ]]; then
+   			WIDTH="$2"
+			shift
+			shift
+		else
+			WIDTH="1"
+			shift
+		fi
+		;;
+	-*)
+		echo "Invalid filter. Please use corona -h for help."	
+		exit 1
+		;;
+	infected | merge | gender | age | daily | monthly | yearly | countries | districts | regions)
+		COMMAND="$1"
+		shift
+		;;
+	*.csv)
+		LOG="$1 $LOG"
+		shift
+		;;	
+	*.gz)
+		GZ_LOG="$1 $GZ_LOG"
+		shift
+		;;
+	*.bz2)
+		BZ_LOG="$1 $BZ_LOG"
+		shift
+		;;
+	*)
+		echo "Invalid command. Please use corona -h for help."
+		exit 1
+		;;	
+	esac
+done
+
+#TODO: use sed 1d in input and delete it everywhere else
+if [ "$LOG" = "" ] && [ "$GZ_LOG" = "" ] && [ "$BZ_LOG" = "" ]; then
+	READ="$(cat -)"
+elif [ "$LOG" != "" ] && [ "$GZ_LOG" = "" ] && [ "$BZ_LOG" = "" ]; then
+	READ="$(cat $LOG)"
+elif [ "$GZ_LOG" != "" ] && [ "$BZ_LOG" = "" ]; then
+	READ="$(gzip -d -c $GZ_LOG | cat $LOG)"
+elif [ "$BZ_LOG" != "" ]; then
+	READ="$(bzip2 -d -c $BZ_LOG | gzip -d -c $GZ_LOG | cat $LOG)"
+fi
+
+#FILTERS
+if [ -n "$GENDER" ]; then
+	READ=$(echo "$READ" | awk -F ',' -v gender="$GENDER" '$4==gender')
+fi
+
+
+#COMMANDS
+if [ "$COMMAND" = "infected" ]; then
+	echo "$READ" | sed 1d | awk 'END {print NR}'
+	exit 0
+elif ["$COMMAND" = ""] || [ "$COMMAND" = "merge" ] || [ "$AFTER" = "0000-00-00" ] && [ "$BEFORE" = "9999-99-99" ] && [ "$GENDER" = "" ] && [ "$WIDTH" = "0" ] && ["$COMMAND" = ""]; then
+	echo "id,datum,vek,pohlavi,kraj_nuts_kod,okres_lau_kod,nakaza_v_zahranici,nakaza_zeme_csu_kod,reportovano_khs"
+	echo "$READ" | sed 1d
+	exit 0
+elif [ "$COMMAND" = "gender" ]; then
+	gender
+	exit 0
+elif [ "$COMMAND" = "age" ]; then
+	age
+	exit 0
+elif [ "$COMMAND" = "daily" ]; then
+	daily
+	exit 0
+elif [ "$COMMAND" = "monthly" ]; then
+	monthly
+	exit 0
+elif [ "$COMMAND" = "yearly" ]; then
+	yearly
+	exit 0
+elif [ "$COMMAND" = "countries" ]; then
+	countries
+	exit 0
+elif [ "$COMMAND" = "districts" ]; then
+	districts
+	exit 0
+elif [ "$COMMAND" = "regions" ]; then
+	regions
+	exit 0
 fi
