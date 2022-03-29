@@ -28,33 +28,42 @@ print_help() {
 	echo "\t-s [WIDTH]	vypisuje date ne číselně, ale graficky v podobě histogramů"
 }
 
-gender() {
+gender() { #DONE
 	if [ "$WIDTH" = "0" ]; then
-		echo "$READ" | awk -F ',' -v gender=0 '/,M,/ {gender++} END {print "M: " gender}'
-		echo "$READ" | awk -F ',' -v gender=0 '/,Z,/ {gender++} END {print "Z: " gender}'
+		echo "$READ" | awk -F ',' '{if ($4 == "M") genderm++; else if($4 == "Z") genderf++; else none++} END {print("M: " genderm); print("Z: " genderf); if(none > 0){print("None: " none)}}'
 	elif [ "$WIDTH" = "1" ]; then
-		echo "$READ" | awk -F ',' -v gender=0 -v width=100000 '/,M,/ {gender++} END {printf("M: ")} END {for (i=0; i < gender/width-1; i++) printf("#") } END {print("")}'
-		echo "$READ" | awk -F ',' -v gender=0 -v width=100000 '/,Z,/ {gender++} END {printf("Z: ")} END {for (i=0; i < gender/width-1; i++) printf("#") } END {print("")}'
+		echo "$READ" | awk -F ',' -v width=100000 '{if ($4 == "M") genderm++; else if($4 == "Z") genderf++; else none++}\
+			END {printf("M: ")} END {for (i=0; i < genderm/width-1; i++) printf("#") } END {print("")}\
+			END {printf("Z: ")} END {for (i=0; i < genderf/width-1; i++) printf("#") } END {print("")}\
+			END {if (none > 0){printf("None: "); for (i=0; i < none/width-1; i++) printf("#"); print("")}}'
 	else
-		echo "$READ" | awk -F ',' -v width="$WIDTH" '{if ($4 == "M") genderm++; else if ($4 == "Z") genderf++}\
+		echo "$READ" | awk -F ',' -v width="$WIDTH" '{if ($4 == "M") genderm++; else if ($4 == "Z") genderf++; else none++}\
 		END {if (genderm > genderf){
 				printf("M: ")
 				for (i=1; i <= width; i++){printf("#")}
 				print("")
 				printf("Z: ")
 				for (i=1; i < width*genderf/genderm; i++){printf("#")}
-				print("")}
+				print("")
+				if (none > 0){
+				printf("None: ")
+				for (i=1; i < width*none/genderm; i++){printf("#")}
+				print("")}}
 			else{
 				printf("M: ")
 				for (i=1; i < width*genderm/genderf; i++){printf("#")}
 				print("")
 				printf("Z: ")
 				for (i=1; i <= width; i++){printf("#")}
-				print("")}}'
+				print("")
+				if (none > 0){
+				printf("None: ")
+				for (i=1; i < width*none/genderf; i++){printf("#")}
+				print("")}}}'
 	fi
 }
 
-age() {
+age() { #DONE
 	if [ "$WIDTH" = "0" ]; then
 		echo "$READ" | sed 1d | awk -F ',' '{ if ($3 == "") none++
 		else if ($3 <= 5) c5++
@@ -70,7 +79,7 @@ age() {
 		else if ($3 >= 96 && $3 <= 105) c105++
 		else cmore++;}\
 		END {print "0-5	: " c5; print "6-15	: " c15; print "16-25	: " c25; print "26-35	: " c35; print "36-45	: " c45; print "46-55	: " c55
-		print "56-65	: " c65; print "66-75	: " c75; print "76-85	: " c85; print "86-95	: " c95; print "96-105	: " c105; print ">105	: " cmore; print "None	: " none}'
+		print "56-65	: " c65; print "66-75	: " c75; print "76-85	: " c85; print "86-95	: " c95; print "96-105	: " c105; print ">105	: " cmore; if (none > 0){print "None	: " none}}'
 	elif [ "$WIDTH" = "1" ]; then
 		echo "$READ" | sed 1d | awk -F ',' -v width=10000 '{ if ($3 == "") none++
 		else if ($3 <= 5) c5++
@@ -97,9 +106,9 @@ age() {
 		END {printf "86-95	: "} END {for (i=0; i < c95/width-1; i++) printf("#") } END {print("")}\
 		END {printf "96-105	: "} END {for (i=0; i < c105/width-1; i++) printf("#") } END {print("")}\
 		END {printf ">105	: "} END {for (i=0; i < cmore/width-1; i++) printf("#") } END {print("")}\
-		END {printf "None	: "} END {for (i=0; i < none/width-1; i++) printf("#") } END {print("")}'
+		END {if (none > 0){printf("None	: "); for (i=0; i < none/width-1; i++){printf("#")}; print("")}}'
 	else
-		echo "$READ" | sed 1d | awk -F ',' -v width="$WIDTH" '{ if ($3 == "") none++
+		echo "$READ" | sed 1d | awk -F ',' -v width="$WIDTH" -v max=0 '{if ($3 == "") none++
 		else if ($3 <= 5) c5++
 		else if ($3 >= 6 && $3 <= 15) c15++
 		else if ($3 >= 16 && $3 <= 25) c25++
@@ -112,19 +121,32 @@ age() {
 		else if ($3 >= 86 && $3 <= 95) c95++
 		else if ($3 >= 96 && $3 <= 105) c105++
 		else cmore++;}\
-		END {printf "0-5	: "} END {for (i=1; i < c5/width; i++) printf("#") } END {print("")}\
-		END {printf "6-15	: "} END {for (i=1; i < c15/width; i++) printf("#") } END {print("")}\
-		END {printf "16-25	: "} END {for (i=1; i < c25/width; i++) printf("#") } END {print("")}\
-		END {printf "26-35	: "} END {for (i=1; i < c35/width; i++) printf("#") } END {print("")}\
-		END {printf "36-45	: "} END {for (i=1; i < c45/width; i++) printf("#") } END {print("")}\
-		END {printf "46-55	: "} END {for (i=1; i < c55/width; i++) printf("#") } END {print("")}\
-		END {printf "56-65	: "} END {for (i=1; i < c65/width; i++) printf("#") } END {print("")}\
-		END {printf "66-75	: "} END {for (i=1; i < c75/width; i++) printf("#") } END {print("")}\
-		END {printf "76-85	: "} END {for (i=1; i < c85/width; i++) printf("#") } END {print("")}\
-		END {printf "86-95	: "} END {for (i=1; i < c95/width; i++) printf("#") } END {print("")}\
-		END {printf "96-105	: "} END {for (i=1; i < c105/width; i++) printf("#") } END {print("")}\
-		END {printf ">105	: "} END {for (i=1; i < cmore/width; i++) printf("#") } END {print("")}\
-		END {printf "None	: "} END {for (i=1; i < none/width; i++) printf("#") } END {print("")}'
+		END {	if (c5 > max){max=c5}
+				if (c15 > max){max=c15}
+				if (c25 > max){max=c25}
+				if (c35 > max){max=c35}
+				if (c45 > max){max=c45}
+				if (c55 > max){max=c55}
+				if (c65 > max){max=c65}
+				if (c75 > max){max=c75}
+				if (c85 > max){max=c85}
+				if (c95 > max){max=c95}
+				if (c105 > max){max=c105}
+				if (cmore > max){max=cmore}
+				if (none > max){max=none}}\
+		END {printf "0-5	: "} END {for (i=0; i < c5*width/max; i++) printf("#") } END {print("")}\
+		END {printf "6-15	: "} END {for (i=0; i < c15*width/max; i++) printf("#") } END {print("")}\
+		END {printf "16-25	: "} END {for (i=0; i < c25*width/max; i++) printf("#") } END {print("")}\
+		END {printf "26-35	: "} END {for (i=0; i < c35*width/max; i++) printf("#") } END {print("")}\
+		END {printf "36-45	: "} END {for (i=0; i < c45*width/max; i++) printf("#") } END {print("")}\
+		END {printf "46-55	: "} END {for (i=0; i < c55*width/max; i++) printf("#") } END {print("")}\
+		END {printf "56-65	: "} END {for (i=0; i < c65*width/max; i++) printf("#") } END {print("")}\
+		END {printf "66-75	: "} END {for (i=0; i < c75*width/max; i++) printf("#") } END {print("")}\
+		END {printf "76-85	: "} END {for (i=0; i < c85*width/max; i++) printf("#") } END {print("")}\
+		END {printf "86-95	: "} END {for (i=0; i < c95*width/max; i++) printf("#") } END {print("")}\
+		END {printf "96-105	: "} END {for (i=0; i < c105*width/max; i++) printf("#") } END {print("")}\
+		END {printf ">105	: "} END {for (i=0; i < cmore*width/max; i++) printf("#") } END {print("")}\
+		END {if (none > 0){printf("None	: "); for (i=0; i < none*width/max; i++){printf("#")}; print("")}}'
 	fi
 }
 
@@ -239,6 +261,13 @@ regions() {
 	fi
 }
 
+validation(){
+	sed 1d |awk -F ',' '{if (($3 < 0 || $3 !~ "^[[:space:]]*[0-9]*[[:space:]]*+$") && length($3) != 0){print "Invalid age: " $0 > "/dev/stderr"}
+				 		 else{print $0}}'
+	sed 1d | awk -F ',' '{	if (($2 !~ "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$") && length($2) != 0){print "Invalid date: " $0 > "/dev/stderr"}
+						   	else{print $0}}' #TODO: fix regex for invalid dates
+}
+
 COMMAND=""
 AFTER="0000-00-00"
 BEFORE="9999-99-99"
@@ -255,16 +284,24 @@ while [ "$#" -gt 0 ]; do
 		shift
 		;;
 	-a)
-		#TODO
-		AFTER="$2"
-		shift
-		shift
+		if [[ "$2" =~ ^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$ ]]; then
+			AFTER="$2"
+			shift
+			shift
+		else
+			echo "Invalid date in after filter. Please use corona -h for help."
+			exit 1
+		fi
 		;;
 	-b)
-		#TODO
-		BEFORE="$2"
-		shift
-		shift
+		if [[ "$2" =~ ^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$ ]]; then
+			BEFORE="$2"
+			shift
+			shift
+		else
+			echo "Invalid date in before filter. Please use corona -h for help."
+			exit 1
+		fi
 		;;
 	-g)
 		if [ "$2" = "M" ] || [ "$2" = "Z" ]; then
@@ -314,30 +351,28 @@ while [ "$#" -gt 0 ]; do
 	esac
 done
 
-#TODO: use sed 1d in input and delete it everywhere else
 if [ "$LOG" = "" ] && [ "$GZ_LOG" = "" ] && [ "$BZ_LOG" = "" ]; then
-	READ="$(cat -)"
+	READ="$(cat - | validation)"
 elif [ "$LOG" != "" ] && [ "$GZ_LOG" = "" ] && [ "$BZ_LOG" = "" ]; then
-	READ="$(cat $LOG)"
+	READ="$(cat $LOG | validation)"
 elif [ "$GZ_LOG" != "" ] && [ "$BZ_LOG" = "" ]; then
-	READ="$(gzip -d -c $GZ_LOG | cat $LOG)"
+	READ="$(gzip -d -c $GZ_LOG | cat $LOG | validation)"
 elif [ "$BZ_LOG" != "" ]; then
-	READ="$(bzip2 -d -c $BZ_LOG | gzip -d -c $GZ_LOG | cat $LOG)"
+	READ="$(bzip2 -d -c $BZ_LOG | gzip -d -c $GZ_LOG | cat $LOG | validation)"
 fi
 
 #FILTERS
 if [ -n "$GENDER" ]; then
-	READ=$(echo "$READ" | awk -F ',' -v gender="$GENDER" '$4==gender')
+	READ=$(echo "$READ" | awk -F ',' -v gender="$GENDER" '{if ($4 == gender || length($4) == 0) print}')
+elif [ "$AFTER" != "0000-00-00" ]; then
+	READ=$(echo "$READ" | awk -F ',' -v after="$AFTER" '{if ($2 >= after || length($2) == 0) print}')
+elif [ "$BEFORE" != "9999-99-99" ]; then
+	READ=$(echo "$READ" | awk -F ',' -v before="$BEFORE" '{if ($2 <= before || length($2) == 0) print}')
 fi
-
 
 #COMMANDS
 if [ "$COMMAND" = "infected" ]; then
 	echo "$READ" | sed 1d | awk 'END {print NR}'
-	exit 0
-elif ["$COMMAND" = ""] || [ "$COMMAND" = "merge" ] || [ "$AFTER" = "0000-00-00" ] && [ "$BEFORE" = "9999-99-99" ] && [ "$GENDER" = "" ] && [ "$WIDTH" = "0" ] && ["$COMMAND" = ""]; then
-	echo "id,datum,vek,pohlavi,kraj_nuts_kod,okres_lau_kod,nakaza_v_zahranici,nakaza_zeme_csu_kod,reportovano_khs"
-	echo "$READ" | sed 1d
 	exit 0
 elif [ "$COMMAND" = "gender" ]; then
 	gender
@@ -362,5 +397,9 @@ elif [ "$COMMAND" = "districts" ]; then
 	exit 0
 elif [ "$COMMAND" = "regions" ]; then
 	regions
+	exit 0
+elif [ "$COMMAND" = "" ] || [ "$COMMAND" = "merge" ]; then
+	echo "id,datum,vek,pohlavi,kraj_nuts_kod,okres_lau_kod,nakaza_v_zahranici,nakaza_zeme_csu_kod,reportovano_khs"
+	echo "$READ" | sed 1d
 	exit 0
 fi
