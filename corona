@@ -7,36 +7,36 @@ print_help() {
 	echo "Usage: corona [-h] [FILTERS] [COMMAND] [LOG [LOG2 [...]]"
 	echo ""
 	echo "HELP:"
-	echo "\t-h/--help — vypíše nápovedu"
+	echo "-h/--help — vypíše nápovedu"
 	echo ""
 	echo "COMMANDS:"
-	echo "\tinfected 	spočítá počet nakažených"
-	echo "\tmerge 		sloučí několik souborů se záznamy do jednoho, zachovávající původní pořadí"
-	echo "\tgender 		vypíše počet nakažených pro jednotlivá pohlaví"
-	echo "\tage 		vypíše statistiku počtu nakažených osob dle věku"
-	echo "\tdaily 		vypíše statistiku nakažených osob pro jednotlivé dny"
-	echo "\tmonthly 	vypíše statistiku nakažených osob pro jednotlivé měsíce"
-	echo "\tyearly 		vypíše statistiku nakažených osob pro jednotlivé roky"
-	echo "\tcountries 	vypíše statistiku nakažených osob pro jednotlivé země nákazy"
-	echo "\tdistricts 	vypíše statistiku nakažených osob pro jednotlivé okresy"
-	echo "\tregions 	vypíše statistiku nakažených osob pro jednotlivé kraje"
+	echo "infected	spočítá počet nakažených"
+	echo "merge		sloučí několik souborů se záznamy do jednoho, zachovávající původní pořadí"
+	echo "gender		vypíše počet nakažených pro jednotlivá pohlaví"
+	echo "age		vypíše statistiku počtu nakažených osob dle věku"
+	echo "daily 		vypíše statistiku nakažených osob pro jednotlivé dny"
+	echo "monthly		vypíše statistiku nakažených osob pro jednotlivé měsíce"
+	echo "yearly		vypíše statistiku nakažených osob pro jednotlivé roky"
+	echo "countries	vypíše statistiku nakažených osob pro jednotlivé země nákazy"
+	echo "districts	vypíše statistiku nakažených osob pro jednotlivé okresy"
+	echo "regions		vypíše statistiku nakažených osob pro jednotlivé kraje"
 	echo ""
 	echo "FILTERS:"
-	echo "\t-a DATETIME 	after: jsou uvažovány pouze záznamy PO tomto datu. DATETIME je formátu YYYY-MM-DD"
-	echo "\t-b DATETIME 	before: jsou uvažovány pouze záznamy PŘED tímto datem"
-	echo "\t-g GENDER	jsou uvažovány pouze záznamy nakažených osob daného pohlaví. M — muž, Z — žena"
-	echo "\t-s [WIDTH]	vypisuje date ne číselně, ale graficky v podobě histogramů"
+	echo "-a DATETIME 	after: jsou uvažovány pouze záznamy PO tomto datu. DATETIME je formátu YYYY-MM-DD"
+	echo "-b DATETIME 	before: jsou uvažovány pouze záznamy PŘED tímto datem"
+	echo "-g GENDER	jsou uvažovány pouze záznamy nakažených osob daného pohlaví. M — muž, Z — žena"
+	echo "-s [WIDTH]	vypisuje date ne číselně, ale graficky v podobě histogramů"
 }
 
-gender() { #DONE
-	if [ "$WIDTH" = "0" ]; then
+gender() {
+	if [ "$WIDTH" = "0" ]; then #Normal mode if width filter is not set
 		echo "$READ" | awk -F ',' '{if ($4 == "M") genderm++; else if($4 == "Z") genderf++; else none++} END {print("M: " genderm); print("Z: " genderf); if(none > 0){print("None: " none)}}'
-	elif [ "$WIDTH" = "1" ]; then
+	elif [ "$WIDTH" = "1" ]; then #Filter mode without a width number set
 		echo "$READ" | awk -F ',' -v width=100000 '{if ($4 == "M") genderm++; else if($4 == "Z") genderf++; else none++}\
 			END {printf("M: ")} END {for (i=0; i < genderm/width-1; i++) printf("#") } END {print("")}\
 			END {printf("Z: ")} END {for (i=0; i < genderf/width-1; i++) printf("#") } END {print("")}\
 			END {if (none > 0){printf("None: "); for (i=0; i < none/width-1; i++) printf("#"); print("")}}'
-	else
+	else #Filter mode with a number set in a command
 		echo "$READ" | awk -F ',' -v width="$WIDTH" '{if ($4 == "M") genderm++; else if ($4 == "Z") genderf++; else none++}\
 		END {if (genderm > genderf){
 				printf("M: ")
@@ -63,8 +63,8 @@ gender() { #DONE
 	fi
 }
 
-age() { #DONE
-	if [ "$WIDTH" = "0" ]; then
+age() {
+	if [ "$WIDTH" = "0" ]; then #Normal mode if width filter is not set
 		echo "$READ" | awk -F ',' '{ if ($3 == "") none++
 		else if ($3 <= 5) c5++
 		else if ($3 >= 6 && $3 <= 15) c15++
@@ -80,7 +80,7 @@ age() { #DONE
 		else cmore++;}\
 		END {print "0-5	: " c5; print "6-15	: " c15; print "16-25	: " c25; print "26-35	: " c35; print "36-45	: " c45; print "46-55	: " c55
 		print "56-65	: " c65; print "66-75	: " c75; print "76-85	: " c85; print "86-95	: " c95; print "96-105	: " c105; print ">105	: " cmore; if (none > 0){print "None	: " none}}'
-	elif [ "$WIDTH" = "1" ]; then
+	elif [ "$WIDTH" = "1" ]; then #Filter mode without a width number set
 		echo "$READ" | awk -F ',' -v width=10000 '{ if ($3 == "") none++
 		else if ($3 <= 5) c5++
 		else if ($3 >= 6 && $3 <= 15) c15++
@@ -107,7 +107,7 @@ age() { #DONE
 		END {printf "96-105	: "} END {for (i=0; i < c105/width-1; i++) printf("#") } END {print("")}\
 		END {printf ">105	: "} END {for (i=0; i < cmore/width-1; i++) printf("#") } END {print("")}\
 		END {if (none > 0){printf("None	: "); for (i=0; i < none/width-1; i++){printf("#")}; print("")}}'
-	else
+	else #Filter mode with a number set in a command
 		echo "$READ" | awk -F ',' -v width="$WIDTH" -v max=0 '{if ($3 == "") none++
 		else if ($3 <= 5) c5++
 		else if ($3 >= 6 && $3 <= 15) c15++
@@ -151,16 +151,16 @@ age() { #DONE
 }
 
 daily() {
-	if [ "$WIDTH" = "0" ]; then
+	if [ "$WIDTH" = "0" ]; then #Normal mode if width filter is not set
 		echo "$READ" | awk -F ',' '{day[$2]++} END {for (i in day){if (i == ""){print("None: " day[i])}; print(i ": " day[i])}}' | sort
-	elif [ "$WIDTH" = "1" ]; then
+	elif [ "$WIDTH" = "1" ]; then #Filter mode without a width number set
 		echo "$READ" | awk -F ',' -v width=500 '{day[$2]++}
 		END {	for (i in day){
 					if (i == ""){print("None: " day[i])}
 					printf(i ": ")
 					for (j=1; j < int(day[i]/width); j++){printf("#")}
 					print("")}}' | sort
-	else
+	else #Filter mode with a number set in a command
 		echo "$READ" | awk -F ',' -v width="$WIDTH" '{max=0; day[$2]++; if (day[$2] > max){max = day[$2]}}\
 		END {	for (i in day){
 					if (i == ""){print("None: " day[i])}
@@ -171,19 +171,19 @@ daily() {
 }
 
 monthly() {
-	if [ "$WIDTH" = "0" ]; then
-		echo "$READ" | awk -F ',' '{mon[substr($2, 1, 7)]++} END {for (i in mon){if (i == ""){print("None: " day[i])} print(i ": " mon[i])}}' | sort
-	elif [ "$WIDTH" = "1" ]; then
+	if [ "$WIDTH" = "0" ]; then #Normal mode if width filter is not set
+		echo "$READ" | awk -F ',' '{mon[substr($2, 1, 7)]++} END {for (i in mon){if (i == ""){print("None: " mon[i])} print(i ": " mon[i])}}' | sort
+	elif [ "$WIDTH" = "1" ]; then #Filter mode without a width number set
 		echo "$READ" | awk -F ',' -v width=10000 '{mon[substr($2, 1, 7)]++}
 		END {	for (i in mon){
-					if (i == ""){print("None: " day[i])}
+					if (i == ""){print("None: " mon[i])}
 					printf(i ": ")
 					for (j=1; j < int(mon[i]/width); j++){printf("#")}
 					print("")}}' | sort
-	else
+	else #Filter mode with a number set in a command
 		echo "$READ" | awk -F ',' -v width="$WIDTH" '{max=0; mon[substr($2, 1, 7)]++; if (mon[substr($2, 1, 7)] > max){max = mon[substr($2, 1, 7)]}}\
 		END {	for (i in mon){
-					if (i == ""){print("None: " day[i])}
+					if (i == ""){print("None: " mon[i])}
 					printf(i ": ")
 					for (j=1; j < int(width*mon[i]/max)-1; j++){printf("#")}
 					print("")}}' | sort
@@ -191,19 +191,19 @@ monthly() {
 }
 
 yearly() {
-	if [ "$WIDTH" = "0" ]; then
-		echo "$READ" | awk -F ',' '{yr[substr($2, 1, 4)]++} END {for (i in yr){if (i == ""){print("None: " day[i])} print(i ": " yr[i])}}' | sort
-	elif [ "$WIDTH" = "1" ]; then
+	if [ "$WIDTH" = "0" ]; then #Normal mode if width filter is not set
+		echo "$READ" | awk -F ',' '{yr[substr($2, 1, 4)]++} END {for (i in yr){if (i == ""){print("None: " yr[i])} print(i ": " yr[i])}}' | sort
+	elif [ "$WIDTH" = "1" ]; then #Filter mode without a width number set
 		echo "$READ" | awk -F ',' -v width=100000 '{yr[substr($2, 1, 4)]++}
 		END {	for (i in yr){
-					if (i == ""){print("None: " day[i])}
+					if (i == ""){print("None: " yr[i])}
 					printf(i ": ")
 					for (j=1; j < int(yr[i]/width); j++){printf("#")}
 					print("")}}' | sort
-	else #NOT SURE IF THIS WORKS
+	else #Filter mode with a number set in a command
 		echo "$READ" | awk -F ',' -v width="$WIDTH" '{max=0; yr[substr($2, 1, 4)]++; if (yr[substr($2, 1, 4)] > max){max = yr[substr($2, 1, 4)]}}\
 		END {	for (i in yr){
-					if (i == ""){print("None: " day[i])}
+					if (i == ""){print("None: " yr[i])}
 					printf(i ": ")
 					for (j=1; j < int(width*yr[i]/max)-1; j++){printf("#")}
 					print("")}}' | sort
@@ -211,16 +211,16 @@ yearly() {
 }
 
 countries() {
-	if [ "$WIDTH" = "0" ]; then
+	if [ "$WIDTH" = "0" ]; then #Normal mode if width filter is not set
 		echo "$READ" | awk -F ',' '{country[$8]++} END {for (i in country){if (i == ""){continue}; print(i ": " country[i])}}' | sort
-	elif [ "$WIDTH" = "1" ]; then
+	elif [ "$WIDTH" = "1" ]; then #Filter mode without a width number set
 		echo "$READ" | awk -F ',' -v width=100 '{country[$8]++}
 		END {	for (i in country){
 					if (i == ""){continue}
 					printf(i ": ")
 					for (j=1; j < int(country[i]/width); j++){printf("#")}
 					print("")}}' | sort
-	else
+	else #Filter mode with a number set in a command
 		echo "$READ" | awk -F ',' -v width="$WIDTH" '{max=0; country[$8]++; if (country[$8] != "" && country[$8] > max){max = country[$8]}}\
 		END {	for (i in country){
 					if (i == ""){continue}
@@ -231,19 +231,19 @@ countries() {
 }
 
 districts() {
-	if [ "$WIDTH" = "0" ]; then
-		echo "$READ" | awk -F ',' '{district[$6]++} END {for (i in district){if (i == ""){print("None: " day[i])}; print(i ": " district[i])}}' | sort
-	elif [ "$WIDTH" = "1" ]; then
+	if [ "$WIDTH" = "0" ]; then #Normal mode if width filter is not set
+		echo "$READ" | awk -F ',' '{district[$6]++} END {for (i in district){if (i == ""){print("None: " district[i])}; print(i ": " district[i])}}' | sort
+	elif [ "$WIDTH" = "1" ]; then #Filter mode without a width number set
 		echo "$READ" | awk -F ',' -v width=1000 '{district[$6]++}
 		END {	for (i in district){
-					if (i == ""){print("None: " day[i])}
+					if (i == ""){print("None: " district[i])}
 					printf(i ": ")
 					for (j=1; j < int(district[i]/width); j++){printf("#")}
 					print("")}}' | sort
-	else
+	else #Filter mode with a number set in a command
 		echo "$READ" | awk -F ',' -v width="$WIDTH" '{max=0; district[$6]++; if (district[$6] != "" && district[$6] > max){max = district[$6]}}\
 		END {	for (i in district){
-					if (i == ""){print("None: " day[i])}
+					if (i == ""){print("None: " district[i])}
 					printf(i ": ")
 					for (j=1; j < int(width*district[i]/max); j++){printf("#")}
 					print("")}}' | sort
@@ -251,75 +251,32 @@ districts() {
 }
 
 regions() {
-	if [ "$WIDTH" = "0" ]; then
-		echo "$READ" | awk -F ',' '{region[$5]++} END {for (i in region){if (i == ""){print("None: " day[i])}; print(i ": " region[i])}}' | sort
-	elif [ "$WIDTH" = "1" ]; then
+	if [ "$WIDTH" = "0" ]; then #Normal mode if width filter is not set
+		echo "$READ" | awk -F ',' '{region[$5]++} END {for (i in region){if (i == ""){print("None: " region[i])}; print(i ": " region[i])}}' | sort
+	elif [ "$WIDTH" = "1" ]; then #Filter mode without a width number set
 		echo "$READ" | awk -F ',' -v width=10000 '{region[$5]++}
 		END {	for (i in region){
-					if (i == ""){print("None: " day[i])}
+					if (i == ""){print("None: " region[i])}
 					printf(i ": ")
 					for (j=1; j < int(region[i]/width); j++){printf("#")}
 					print("")}}' | sort
-	else
+	else #Filter mode with a number set in a command
 		echo "$READ" | awk -F ',' -v width="$WIDTH" '{max=0; region[$5]++; if (region[$5] != "" && region[$5] > max){max = region[$5]}}\
 		END {	for (i in region){
-					if (i == ""){print("None: " day[i])}
+					if (i == ""){print("None: " region[i])}
 					printf(i ": ")
 					for (j=1; j < int(width*region[i]/max); j++){printf("#")}
 					print("")}}' | sort
 	fi
 }
 
-validation() { #TODO: fix validating the date
-	# DATE="^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])*+$"
-
-	awk -F ',' '{if (($3 < 0 || $3 !~ "^[[:space:]]*[0-9]*[[:space:]]*+$") && length($3) != 0){print "Invalid age: " $0 > "/dev/stderr"}
-				 	else{print $0}
-				}' #THIS WORKS: Validating the age
-
-	# awk -F ',' '{if (((substr($2,1,4)%4 == 0 && substr($2,1,4)%100 == 0 || substr($2,1,4)%400 == 0) && substr($2,6,2) == 2 && substr($2,2) > 29 || substr($2,6,2) == 2 && substr($2,2) > 28 || (substr($2,6,2) == 4 || substr($2,6,2) == 6 || substr($2,6,2) == 9 || substr($2,6,2) == 11) && substr($2,2) > 30) || substr($2,1,4) > 9999 || substr($2,1,4) < 0000 || subtr($2,6,2) < 1 || subtr($2,6,2) > 12 || substr($2,2) < 1 || substr($2,2) > 31 && length($2) != 0){print "Invalid date: " $0 > "/dev/stderr"}
-	# 					else{print $0}}'
-
-	# awk -F ',' -v date="^[0-9]{4}-(((04|06|09|11)-(0[1-9]|[12][0-9]|30))|((02)-(0[1-9]|1[0-9]|2[0-8]))|((01|03|05|07|08|10|12)-(0[1-9]|[1-2][0-9]|3[0-1])))$)|(^[0-9]{2}((0|2|4|6|8)(0|4|8))|((1|3|5|7|9)(2|6)))-02-29$" '{
-	# 	if (($3 < 0 || $3 !~ "^[[:space:]]*[0-9]*[[:space:]]*+$") && length($3) != 0){print "Invalid age: " $0 > "/dev/stderr"}
-	# 	else if ($2 !~ date){print "Invalid date: " $0 > "/dev/stderr"}
-	# 	else{print $0}}'
-	
-	# awk -F "," -v leap="no" -v valid="yes" '{
-    #     if (((date[1]%4 == 0) && (date[1]%100 != 0)) || date[1]%400 == 0)
-	# 		leap="yes"
-    #     if (date[1] !~ /^[0-9]+$/ || date[1]=="")
-	# 		valid="no"
-    #     if (date[2] !~ /^[0-9]+$/ || date[2]=="")
-	# 		valid="no"
-    #     if (date[3] !~ /^[0-9]+$/ || date[3]=="")
-	# 		valid="no"
-
-    #     if (date[1] > 9999 || date[1] < 1)
-	# 		valid="no"
-    #     if (date[2] < 1 || date[2] > 12)
-	# 		valid="no"
-    #     if (date[3] < 1 || date[3] > 31)
-	# 		valid="no"
-
-    #     if (date[2] == 2) {
-    #         if (leap == "yes" && date[3] > 29)
-	# 			valid="no"
-    #         else if (date[3] > 28)
-	# 			valid="no"
-    #     }
-    #     if ((date[2] == 4 || date[2] == 6 || date[2] == 9 || date[2] == 11) && date[1] > 30)
-	# 		valid="no"
-	# 	} split($2, date, "-") {
-	# 	if (NR == 1 || !$0)
-	# 		next
-	# 	else if (valid == "no" && length($2) != 0)
-	# 		print "Invalid date: " $0 > "/dev/stderr"
-    # 	else if (($3 < 0 || $3 !~ "^[[:space:]]*[0-9]*[[:space:]]*+$") && length($3) != 0)
-	# 		print "Invalid age: " $0 > "/dev/stderr"
-    # 	else
-	# 		print $0
-	# }'
+validation() {
+	#For age to be valid, the age needs to be a positive integer
+	#There are 30 days in only april, june, september and november. Every other month has 31 days, except february which has only 28 days.			A year is considered a leap year if the last 2 numbers of the year are divisible by 4 or they are two zeros.
+	awk -F ',' -v date="(^[0-9]{4}-(((0[469]|11)-(0[1-9]|[12][0-9]|30))|((0[13578]|1[02])-(0[1-9]|[12][0-9]|3[01]))|((02)-(0[1-9]|[12][0-8]|19)))$)|(^[0-9]{2}([02468][048])|([13579][26]))-02-29$" '{
+		if (($3 < 0 || $3 !~ "^[[:space:]]*[0-9]*[[:space:]]*+$") && length($3) != 0){print "Invalid age: " $0 > "/dev/stderr"}
+		else if ($2 !~ date){print "Invalid date: " $0 > "/dev/stderr"}
+		else{print $0} }'
 }
 
 COMMAND=""
@@ -327,12 +284,15 @@ AFTER="0000-00-00"
 BEFORE="9999-99-99"
 GENDER=""
 WIDTH="0"
+PRINT_HELP="FALSE"
 READ=""
 
+#LOADING COMMANDS AND FILTERS
 while [ "$#" -gt 0 ]; do
 	case "$1" in
 	-h | --help)
 		print_help
+		PRINT_HELP="TRUE"
 		shift
 		;;
 	-a)
@@ -385,15 +345,15 @@ while [ "$#" -gt 0 ]; do
 		shift
 		;;
 	*.csv)
-		READ+="$(cat $1 | tr -d '\r\t ' | grep '\S' | sed 1d | validation)"$'\n'
+		READ+="$(cat $1 | grep '\S' | tr -d '\r\t ' | sed 1d | validation)"$'\n'
 		shift
 		;;	
 	*.gz)
-		READ+="$(gzip -d -c $1 | tr -d '\r\t ' | grep '\S' | sed 1d)"$'\n'
+		READ+="$(gzip -d -c $1 | grep '\S' | tr -d '\r\t ' | sed 1d | validation)"$'\n'
 		shift
 		;;
 	*.bz2)
-		READ+="$(bzip2 -d -c $1 | tr -d '\r\t ' | grep '\S' | sed 1d)"$'\n'
+		READ+="$(bzip2 -d -c $1 | grep '\S' | tr -d '\r\t ' | sed 1d | validation)"$'\n'
 		shift
 		;;
 	*)
@@ -405,7 +365,7 @@ done
 #Removes extra whitespaces in READ
 READ=$(echo "$READ" | sed '/^[[:space:]]*$/d')
 
-#FILTERS
+#APPLYING THE FILTERS
 if [ "$GENDER" != "" ]; then
 	READ=$(echo "$READ" | awk -F ',' -v gender="$GENDER" '{if ($4 == gender || length($4) == 0) print}')
 elif [ "$AFTER" != "0000-00-00" ]; then
@@ -414,10 +374,11 @@ elif [ "$BEFORE" != "9999-99-99" ]; then
 	READ=$(echo "$READ" | awk -F ',' -v before="$BEFORE" '{if ($2 <= before || length($2) == 0) print}')
 fi
 
-#COMMANDS
-if [ "$COMMAND" = "infected" ]; then
+#CHECKING FOR COMMANDS
+if [ "$PRINT_HELP" = "TRUE" ]; then
+	exit 0
+elif [ "$COMMAND" = "infected" ]; then
 	echo "$READ" | awk 'END {print NR}'
-	echo "$READ" > test.txt
 	exit 0
 elif [ "$COMMAND" = "gender" ]; then
 	gender
