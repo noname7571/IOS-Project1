@@ -3,6 +3,13 @@
 export POSIXLY_CORRECT=yes
 export LC_NUMERIC=en_US.UTF-8
 
+#############################################################
+#		Author: Matej Tomko									#
+#		xlogin: xtomko06									#
+#		Date: 2022-04-01									#
+#		About: First project for subject IOS at FIT VUT		#
+#############################################################
+
 print_help() {
 	echo "Usage: corona [-h] [FILTERS] [COMMAND] [LOG [LOG2 [...]]"
 	echo ""
@@ -134,149 +141,174 @@ age() {
 				if (c105 > max){max=c105}
 				if (cmore > max){max=cmore}
 				if (none > max){max=none}}\
-		END {printf "0-5	: "} END {for (i=0; i < c5*width/max; i++) printf("#") } END {print("")}\
-		END {printf "6-15	: "} END {for (i=0; i < c15*width/max; i++) printf("#") } END {print("")}\
-		END {printf "16-25	: "} END {for (i=0; i < c25*width/max; i++) printf("#") } END {print("")}\
-		END {printf "26-35	: "} END {for (i=0; i < c35*width/max; i++) printf("#") } END {print("")}\
-		END {printf "36-45	: "} END {for (i=0; i < c45*width/max; i++) printf("#") } END {print("")}\
-		END {printf "46-55	: "} END {for (i=0; i < c55*width/max; i++) printf("#") } END {print("")}\
-		END {printf "56-65	: "} END {for (i=0; i < c65*width/max; i++) printf("#") } END {print("")}\
-		END {printf "66-75	: "} END {for (i=0; i < c75*width/max; i++) printf("#") } END {print("")}\
-		END {printf "76-85	: "} END {for (i=0; i < c85*width/max; i++) printf("#") } END {print("")}\
-		END {printf "86-95	: "} END {for (i=0; i < c95*width/max; i++) printf("#") } END {print("")}\
-		END {printf "96-105	: "} END {for (i=0; i < c105*width/max; i++) printf("#") } END {print("")}\
-		END {printf ">105	: "} END {for (i=0; i < cmore*width/max; i++) printf("#") } END {print("")}\
+		END {printf "0-5   : "} END {for (i=0; i < c5*width/max; i++) printf("#") } END {print("")}\
+		END {printf "6-15  : "} END {for (i=0; i < c15*width/max; i++) printf("#") } END {print("")}\
+		END {printf "16-25 : "} END {for (i=0; i < c25*width/max; i++) printf("#") } END {print("")}\
+		END {printf "26-35 : "} END {for (i=0; i < c35*width/max; i++) printf("#") } END {print("")}\
+		END {printf "36-45 : "} END {for (i=0; i < c45*width/max; i++) printf("#") } END {print("")}\
+		END {printf "46-55 : "} END {for (i=0; i < c55*width/max; i++) printf("#") } END {print("")}\
+		END {printf "56-65 : "} END {for (i=0; i < c65*width/max; i++) printf("#") } END {print("")}\
+		END {printf "66-75 : "} END {for (i=0; i < c75*width/max; i++) printf("#") } END {print("")}\
+		END {printf "76-85 : "} END {for (i=0; i < c85*width/max; i++) printf("#") } END {print("")}\
+		END {printf "86-95 : "} END {for (i=0; i < c95*width/max; i++) printf("#") } END {print("")}\
+		END {printf "96-105: "} END {for (i=0; i < c105*width/max; i++) printf("#") } END {print("")}\
+		END {printf ">105  : "} END {for (i=0; i < cmore*width/max; i++) printf("#") } END {print("")}\
 		END {if (none > 0){printf("None	: "); for (i=0; i < none*width/max; i++){printf("#")}; print("")}}'
 	fi
 }
 
 daily() {
 	if [ "$WIDTH" = "0" ]; then #Normal mode if width filter is not set
-		echo "$READ" | awk -F ',' '{day[$2]++} END {for (i in day){if (i == ""){print("None: " day[i])}; print(i ": " day[i])}}' | sort
+		echo "$READ" | awk -F ',' '{day[$2]++} END {for (i in day){
+														if (i == ""){print("None: " day[i])}
+														else{print(i ": " day[i])}} }' | sort
 	elif [ "$WIDTH" = "1" ]; then #Filter mode without a width number set
 		echo "$READ" | awk -F ',' -v width=500 '{day[$2]++}
 		END {	for (i in day){
 					if (i == ""){print("None: " day[i])}
-					printf(i ": ")
-					for (j=1; j < int(day[i]/width); j++){printf("#")}
-					print("")}}' | sort
+					else{
+						printf(i ": ")
+						for (j=1; j < int(day[i]/width); j++){printf("#")}
+						print("")}} }' | sort
 	else #Filter mode with a number set in a command
-		echo "$READ" | awk -F ',' -v width="$WIDTH" '{max=0; day[$2]++; if (day[$2] > max){max = day[$2]}}\
+		echo "$READ" | awk -F ',' -v width="$WIDTH" -v max=0 '{day[$2]++; if (day[$2] > max){max = day[$2]}}\
 		END {	for (i in day){
 					if (i == ""){print("None: " day[i])}
-					printf(i ": ")
-					for (j=1; j < int(width*day[i]/max); j++){printf("#")}
-					print("")}}' | sort
+					else{
+						printf(i ": ")
+						for (j=0; j < int(width*day[i]/max); j++){printf("#")}
+						print("")}} }' | sort
 	fi
 }
 
 monthly() {
 	if [ "$WIDTH" = "0" ]; then #Normal mode if width filter is not set
-		echo "$READ" | awk -F ',' '{mon[substr($2, 1, 7)]++} END {for (i in mon){if (i == ""){print("None: " mon[i])} print(i ": " mon[i])}}' | sort
+		echo "$READ" | awk -F ',' '{mon[substr($2, 1, 7)]++} END {for (i in mon){
+																	if (i == ""){print("None: " mon[i])}
+																	else{print(i ": " mon[i])}} }' | sort
 	elif [ "$WIDTH" = "1" ]; then #Filter mode without a width number set
 		echo "$READ" | awk -F ',' -v width=10000 '{mon[substr($2, 1, 7)]++}
 		END {	for (i in mon){
 					if (i == ""){print("None: " mon[i])}
-					printf(i ": ")
-					for (j=1; j < int(mon[i]/width); j++){printf("#")}
-					print("")}}' | sort
+					else{
+						printf(i ": ")
+						for (j=1; j < int(mon[i]/width); j++){printf("#")}
+						print("")}} }' | sort
 	else #Filter mode with a number set in a command
-		echo "$READ" | awk -F ',' -v width="$WIDTH" '{max=0; mon[substr($2, 1, 7)]++; if (mon[substr($2, 1, 7)] > max){max = mon[substr($2, 1, 7)]}}\
+		echo "$READ" | awk -F ',' -v width="$WIDTH" -v max=0 '{mon[substr($2, 1, 7)]++; if (mon[substr($2, 1, 7)] > max){max = mon[substr($2, 1, 7)]}}\
 		END {	for (i in mon){
 					if (i == ""){print("None: " mon[i])}
-					printf(i ": ")
-					for (j=1; j < int(width*mon[i]/max)-1; j++){printf("#")}
-					print("")}}' | sort
+					else{
+						printf(i ": ")
+						for (j=0; j < int(width*mon[i]/max); j++){printf("#")}
+						print("")}} }' | sort
 	fi
 }
 
 yearly() {
 	if [ "$WIDTH" = "0" ]; then #Normal mode if width filter is not set
-		echo "$READ" | awk -F ',' '{yr[substr($2, 1, 4)]++} END {for (i in yr){if (i == ""){print("None: " yr[i])} print(i ": " yr[i])}}' | sort
+		echo "$READ" | awk -F ',' '{yr[substr($2, 1, 4)]++} END {for (i in yr){
+																	if (i == ""){print("None: " yr[i])}
+																	else{print(i ": " yr[i])}} }' | sort
 	elif [ "$WIDTH" = "1" ]; then #Filter mode without a width number set
 		echo "$READ" | awk -F ',' -v width=100000 '{yr[substr($2, 1, 4)]++}
 		END {	for (i in yr){
 					if (i == ""){print("None: " yr[i])}
-					printf(i ": ")
-					for (j=1; j < int(yr[i]/width); j++){printf("#")}
-					print("")}}' | sort
+					else{
+						printf(i ": ")
+						for (j=1; j < int(yr[i]/width); j++){printf("#")}
+						print("")}} }' | sort
 	else #Filter mode with a number set in a command
-		echo "$READ" | awk -F ',' -v width="$WIDTH" '{max=0; yr[substr($2, 1, 4)]++; if (yr[substr($2, 1, 4)] > max){max = yr[substr($2, 1, 4)]}}\
+		echo "$READ" | awk -F ',' -v width="$WIDTH" -v max=0 '{yr[substr($2, 1, 4)]++; if (yr[substr($2, 1, 4)] > max){max = yr[substr($2, 1, 4)]}}\
 		END {	for (i in yr){
 					if (i == ""){print("None: " yr[i])}
-					printf(i ": ")
-					for (j=1; j < int(width*yr[i]/max)-1; j++){printf("#")}
-					print("")}}' | sort
+					else{
+						printf(i ": ")
+						for (j=0; j < int(width*yr[i]/max); j++){printf("#")}
+						print("")}} }' | sort
 	fi
 }
 
 countries() {
 	if [ "$WIDTH" = "0" ]; then #Normal mode if width filter is not set
-		echo "$READ" | awk -F ',' '{country[$8]++} END {for (i in country){if (i == ""){continue}; print(i ": " country[i])}}' | sort
+		echo "$READ" | awk -F ',' '{country[$8]++} END {for (i in country){
+															if (i == ""){continue}
+															else{print(i ": " country[i])}} }' | sort
 	elif [ "$WIDTH" = "1" ]; then #Filter mode without a width number set
 		echo "$READ" | awk -F ',' -v width=100 '{country[$8]++}
 		END {	for (i in country){
 					if (i == ""){continue}
-					printf(i ": ")
-					for (j=1; j < int(country[i]/width); j++){printf("#")}
-					print("")}}' | sort
+					else{
+						printf(i ": ")
+						for (j=1; j < int(country[i]/width); j++){printf("#")}
+						print("")}} }' | sort
 	else #Filter mode with a number set in a command
-		echo "$READ" | awk -F ',' -v width="$WIDTH" '{max=0; country[$8]++; if (country[$8] != "" && country[$8] > max){max = country[$8]}}\
+		echo "$READ" | awk -F ',' -v width="$WIDTH" -v max=0 '{country[$8]++; if (country[$8] != "" && country[$8] > max){max = country[$8]}}\
 		END {	for (i in country){
 					if (i == ""){continue}
-					printf(i ": ")
-					for (j=1; j < int(width*country[i]/max); j++){printf("#")}
-					print("")}}' | sort
+					else{
+						printf(i ": ")
+						for (j=0; j < int(width*country[i]/max); j++){printf("#")}
+						print("")}} }' | sort
 	fi
 }
 
 districts() {
 	if [ "$WIDTH" = "0" ]; then #Normal mode if width filter is not set
-		echo "$READ" | awk -F ',' '{district[$6]++} END {for (i in district){if (i == ""){print("None: " district[i])}; print(i ": " district[i])}}' | sort
+		echo "$READ" | awk -F ',' '{district[$6]++} END {for (i in district){
+															if (i == ""){print("None: " district[i])}
+															else{print(i ": " district[i])}} }' | sort
 	elif [ "$WIDTH" = "1" ]; then #Filter mode without a width number set
 		echo "$READ" | awk -F ',' -v width=1000 '{district[$6]++}
 		END {	for (i in district){
 					if (i == ""){print("None: " district[i])}
-					printf(i ": ")
-					for (j=1; j < int(district[i]/width); j++){printf("#")}
-					print("")}}' | sort
+					else{
+						printf(i ": ")
+						for (j=1; j < int(district[i]/width); j++){printf("#")}
+						print("")}} }' | sort
 	else #Filter mode with a number set in a command
-		echo "$READ" | awk -F ',' -v width="$WIDTH" '{max=0; district[$6]++; if (district[$6] != "" && district[$6] > max){max = district[$6]}}\
+		echo "$READ" | awk -F ',' -v width="$WIDTH" -v max=0 '{district[$6]++; if (district[$6] != "" && district[$6] > max){max = district[$6]}}\
 		END {	for (i in district){
 					if (i == ""){print("None: " district[i])}
-					printf(i ": ")
-					for (j=1; j < int(width*district[i]/max); j++){printf("#")}
-					print("")}}' | sort
+					else{
+						printf(i ": ")
+						for (j=0; j < int(width*district[i]/max); j++){printf("#")}
+						print("")}} }' | sort
 	fi
 }
 
 regions() {
 	if [ "$WIDTH" = "0" ]; then #Normal mode if width filter is not set
-		echo "$READ" | awk -F ',' '{region[$5]++} END {for (i in region){if (i == ""){print("None: " region[i])}; print(i ": " region[i])}}' | sort
+		echo "$READ" | awk -F ',' '{region[$5]++} END {for (i in region){
+															if (i == ""){print("None: " region[i])}
+															else{print(i ": " region[i])}} }' | sort
 	elif [ "$WIDTH" = "1" ]; then #Filter mode without a width number set
 		echo "$READ" | awk -F ',' -v width=10000 '{region[$5]++}
 		END {	for (i in region){
 					if (i == ""){print("None: " region[i])}
-					printf(i ": ")
-					for (j=1; j < int(region[i]/width); j++){printf("#")}
-					print("")}}' | sort
+					else{
+						printf(i ": ")
+						for (j=1; j < int(region[i]/width); j++){printf("#")}
+						print("")}} }' | sort
 	else #Filter mode with a number set in a command
-		echo "$READ" | awk -F ',' -v width="$WIDTH" '{max=0; region[$5]++; if (region[$5] != "" && region[$5] > max){max = region[$5]}}\
+		echo "$READ" | awk -F ',' -v width="$WIDTH" -v max=0 '{region[$5]++; if (region[$5] != "" && region[$5] > max){max = region[$5]}}\
 		END {	for (i in region){
 					if (i == ""){print("None: " region[i])}
-					printf(i ": ")
-					for (j=1; j < int(width*region[i]/max); j++){printf("#")}
-					print("")}}' | sort
+					else{
+						printf(i ": ")
+						for (j=0; j < int(width*region[i]/max); j++){printf("#")}
+						print("")}} }' | sort
 	fi
 }
 
 validation() {
 	#For age to be valid, the age needs to be a positive integer
-	#There are 30 days in only april, june, september and november. Every other month has 31 days, except february which has only 28 days.			A year is considered a leap year if the last 2 numbers of the year are divisible by 4 or they are two zeros.
+	#There are 30 days in only april, june, september and november. Every other month has 31 days, except february which has only 28 days.
+	#A year is considered a leap year if the last 2 numbers of the year are divisible by 4 or they are two zeros.
 	awk -F ',' -v date="(^[0-9]{4}-(((0[469]|11)-(0[1-9]|[12][0-9]|30))|((0[13578]|1[02])-(0[1-9]|[12][0-9]|3[01]))|((02)-(0[1-9]|[12][0-8]|19)))$)|(^[0-9]{2}([02468][048])|([13579][26]))-02-29$" '{
-		if (($3 < 0 || $3 !~ "^[[:space:]]*[0-9]*[[:space:]]*+$") && length($3) != 0){print "Invalid age: " $0 > "/dev/stderr"}
-		else if ($2 !~ date){print "Invalid date: " $0 > "/dev/stderr"}
-		else{print $0} }'
+			if (($3 < 0 || $3 !~ "^[[:space:]]*[0-9]*[[:space:]]*+$") && length($3) != 0){print "Invalid age: " $0 > "/dev/stderr"}
+			else if ($2 !~ date && length($2) != 0){print "Invalid date: " $0 > "/dev/stderr"}
+			else{print $0} }'
 }
 
 COMMAND=""
@@ -284,15 +316,15 @@ AFTER="0000-00-00"
 BEFORE="9999-99-99"
 GENDER=""
 WIDTH="0"
-PRINT_HELP="FALSE"
 READ=""
+ISFILE="0"
 
 #LOADING COMMANDS AND FILTERS
 while [ "$#" -gt 0 ]; do
 	case "$1" in
 	-h | --help)
 		print_help
-		PRINT_HELP="TRUE"
+		exit 0
 		shift
 		;;
 	-a)
@@ -346,14 +378,17 @@ while [ "$#" -gt 0 ]; do
 		;;
 	*.csv)
 		READ+="$(cat $1 | grep '\S' | tr -d '\r\t ' | sed 1d | validation)"$'\n'
+		ISFILE="1"
 		shift
 		;;	
 	*.gz)
 		READ+="$(gzip -d -c $1 | grep '\S' | tr -d '\r\t ' | sed 1d | validation)"$'\n'
+		ISFILE="1"
 		shift
 		;;
 	*.bz2)
 		READ+="$(bzip2 -d -c $1 | grep '\S' | tr -d '\r\t ' | sed 1d | validation)"$'\n'
+		ISFILE="1"
 		shift
 		;;
 	*)
@@ -362,10 +397,16 @@ while [ "$#" -gt 0 ]; do
 		;;	
 	esac
 done
+
+#Checks if the file was given with the command and if not, takes input from stdin
+if [ "$ISFILE" = "0" ]; then
+	READ="$(cat - | sed 1d | validation)"
+fi
+
 #Removes extra whitespaces in READ
 READ=$(echo "$READ" | sed '/^[[:space:]]*$/d')
 
-#APPLYING THE FILTERS
+#APPLYING THE FILTERS IF USED
 if [ "$GENDER" != "" ]; then
 	READ=$(echo "$READ" | awk -F ',' -v gender="$GENDER" '{if ($4 == gender || length($4) == 0) print}')
 elif [ "$AFTER" != "0000-00-00" ]; then
@@ -375,9 +416,7 @@ elif [ "$BEFORE" != "9999-99-99" ]; then
 fi
 
 #CHECKING FOR COMMANDS
-if [ "$PRINT_HELP" = "TRUE" ]; then
-	exit 0
-elif [ "$COMMAND" = "infected" ]; then
+if [ "$COMMAND" = "infected" ]; then
 	echo "$READ" | awk 'END {print NR}'
 	exit 0
 elif [ "$COMMAND" = "gender" ]; then
@@ -403,10 +442,6 @@ elif [ "$COMMAND" = "districts" ]; then
 	exit 0
 elif [ "$COMMAND" = "regions" ]; then
 	regions
-	exit 0
-elif [ "$COMMAND" = "" ] && [ "$WIDTH" = "0" ] && [ "$BEFORE" = "9999-99-99" ] && [ "$AFTER" = "0000-00-00" ]; then
-	READ="$(cat -)"
-	echo "$READ"
 	exit 0
 elif [ "$COMMAND" = "" ] || [ "$COMMAND" = "merge" ]; then
 	echo "id,datum,vek,pohlavi,kraj_nuts_kod,okres_lau_kod,nakaza_v_zahranici,nakaza_zeme_csu_kod,reportovano_khs"
